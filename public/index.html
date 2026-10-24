@@ -1,0 +1,1237 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EchoCity | Smart City Intelligence</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <style>
+    :root {
+      --bg:#f4f7fb;
+      --surface:#ffffff;
+      --ink:#17243a;
+      --muted:#758198;
+      --line:#e8edf4;
+      --blue:#4f6bed;
+      --navy:#17243a;
+      --green:#159b78;
+      --red:#e45c68;
+      --amber:#e9a23b;
+    }
+
+    * { box-sizing:border-box; }
+
+    body {
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:'DM Sans',sans-serif;
+    }
+
+    button,input,select,textarea { font:inherit; }
+    button { cursor:pointer; }
+
+    .app { min-height:100vh; }
+
+    .sidebar {
+      position:fixed;
+      inset:0 auto 0 0;
+      width:238px;
+      background:#17243a;
+      color:white;
+      padding:27px 18px;
+      display:flex;
+      flex-direction:column;
+      z-index:1000;
+    }
+
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:11px;
+      padding:0 7px 30px;
+      font-family:Manrope,sans-serif;
+      font-size:20px;
+      font-weight:800;
+    }
+
+    .brand-icon {
+      width:39px;height:39px;
+      display:grid;place-items:center;
+      background:#4f6bed;
+      border-radius:12px;
+      font-size:21px;
+    }
+
+    .nav-label {
+      padding:10px 11px;
+      color:#8795ad;
+      font-size:10px;
+      font-weight:700;
+      letter-spacing:1.6px;
+    }
+
+    .nav-item {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:12px;
+      margin:3px 0;
+      border-radius:10px;
+      color:#bdc8da;
+      font-size:13px;
+      text-decoration:none;
+    }
+
+    .nav-item.active,.nav-item:hover {
+      background:#293954;
+      color:white;
+    }
+
+    .nav-item.active { box-shadow:inset 3px 0 #7f91ff; }
+
+    .nav-icon { width:20px;text-align:center;font-size:17px; }
+
+    .sidebar-bottom {
+      margin-top:auto;
+      padding:17px 12px;
+      border:1px solid #34435a;
+      border-radius:12px;
+      color:#bdc8da;
+      font-size:12px;
+      line-height:1.7;
+    }
+
+    .online-dot {
+      display:inline-block;
+      width:7px;height:7px;
+      background:#37d7a5;
+      border-radius:50%;
+      margin-right:7px;
+    }
+
+    main { margin-left:238px; }
+
+    .topbar {
+      min-height:77px;
+      background:white;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:16px 32px;
+      gap:14px;
+    }
+
+    .crumb { color:var(--muted);font-size:12px; }
+    .crumb strong { color:var(--ink); }
+
+    .top-actions { display:flex;align-items:center;gap:12px; }
+
+    .avatar {
+      width:37px;height:37px;border-radius:50%;
+      display:grid;place-items:center;
+      background:#e9edff;color:#465bd0;
+      font-weight:700;font-size:13px;
+    }
+
+    .content { padding:29px 32px 40px;max-width:1600px;margin:auto; }
+
+    .welcome {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:20px;
+      margin-bottom:24px;
+    }
+
+    h1,h2,h3,p { margin-top:0; }
+    h1 {
+      font-family:Manrope,sans-serif;
+      font-size:27px;
+      letter-spacing:-1px;
+      margin-bottom:8px;
+    }
+
+    .subtitle { color:var(--muted);font-size:13px;line-height:1.7; }
+
+    .btn {
+      border:0;border-radius:9px;
+      padding:11px 15px;
+      font-weight:700;font-size:12px;
+      transition:.2s;
+    }
+
+    .btn-primary { background:var(--blue);color:white; }
+    .btn-primary:hover { background:#3f58d3;transform:translateY(-1px); }
+    .btn-light { background:#f0f3f9;color:#394963; }
+    .btn-danger { background:#fff0f1;color:#c33c4a; }
+    .btn:disabled { opacity:.5;cursor:not-allowed; }
+
+    .stats {
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:16px;
+      margin-bottom:22px;
+    }
+
+    .stat {
+      background:white;border:1px solid var(--line);
+      border-radius:14px;padding:19px;
+      min-width:0;
+    }
+
+    .stat-top {
+      display:flex;justify-content:space-between;
+      align-items:center;gap:8px;
+      color:var(--muted);font-size:12px;
+    }
+
+    .stat-icon {
+      width:34px;height:34px;border-radius:10px;
+      display:grid;place-items:center;font-size:17px;
+      flex-shrink:0;
+    }
+
+    .stat-number {
+      font-family:Manrope,sans-serif;
+      font-size:29px;font-weight:800;
+      letter-spacing:-1px;margin:14px 0 5px;
+    }
+
+    .stat-note { font-size:11px;color:var(--muted); }
+
+    .layout {
+      display:grid;
+      grid-template-columns:minmax(0,1.55fr) minmax(290px,1fr);
+      gap:19px;
+      align-items:start;
+    }
+
+    .panel {
+      background:white;border:1px solid var(--line);
+      border-radius:14px;overflow:hidden;margin-bottom:19px;
+      min-width:0;
+    }
+
+    .panel-head {
+      padding:19px 20px;
+      border-bottom:1px solid var(--line);
+      display:flex;justify-content:space-between;
+      align-items:center;gap:12px;
+    }
+
+    .panel-head h2 {
+      font-family:Manrope,sans-serif;
+      font-size:15px;margin:0 0 5px;
+    }
+
+    .panel-head p { margin:0;color:var(--muted);font-size:11px; }
+
+    .panel-body { padding:19px; }
+
+    #map {
+      height:390px;
+      width:100%;
+      background:#edf2f8;
+      z-index:1;
+    }
+
+    .map-footer {
+      display:flex;justify-content:space-between;gap:10px;
+      flex-wrap:wrap;padding:13px 19px;
+      color:var(--muted);font-size:11px;
+      border-top:1px solid var(--line);
+    }
+
+    .legend-dot {
+      display:inline-block;width:8px;height:8px;
+      border-radius:50%;margin-right:5px;
+    }
+
+    .filters {
+      display:flex;gap:8px;flex-wrap:wrap;
+      padding:14px 18px;border-bottom:1px solid var(--line);
+    }
+
+    .filters select,.filters input {
+      min-width:0;max-width:100%;
+      border:1px solid var(--line);
+      background:white;border-radius:8px;
+      padding:9px;font-size:11px;color:var(--ink);
+    }
+
+    .filters input { flex:1;min-width:120px; }
+
+    .issue-list { padding:0 18px; }
+
+    .issue {
+      padding:16px 0;
+      border-bottom:1px solid var(--line);
+    }
+
+    .issue:last-child { border-bottom:0; }
+
+    .issue-top {
+      display:flex;justify-content:space-between;
+      align-items:flex-start;gap:12px;
+    }
+
+    .issue-title {
+      font-weight:700;font-size:13px;
+      overflow-wrap:anywhere;
+    }
+
+    .issue-meta {
+      font-size:11px;color:var(--muted);
+      margin-top:6px;line-height:1.7;
+    }
+
+    .pill {
+      display:inline-flex;align-items:center;
+      border-radius:20px;padding:5px 8px;
+      font-size:10px;font-weight:700;
+      white-space:nowrap;
+    }
+
+    .pill-critical { background:#ffe8eb;color:#c73d4b; }
+    .pill-high { background:#fff0df;color:#b36a12; }
+    .pill-medium { background:#fff7d9;color:#977510; }
+    .pill-low { background:#e5f8ef;color:#137c59; }
+    .pill-status { background:#edf1f8;color:#50617b; }
+
+    .issue-bottom {
+      display:flex;justify-content:space-between;
+      align-items:center;gap:10px;margin-top:13px;
+    }
+
+    .score { font-size:12px;font-weight:700; }
+    .score span { color:var(--muted);font-weight:400; }
+
+    .small-actions { display:flex;gap:6px;flex-wrap:wrap; }
+
+    .small-btn {
+      padding:7px 9px;border:1px solid var(--line);
+      border-radius:7px;background:white;
+      font-size:10px;font-weight:700;color:#44516a;
+    }
+
+    .priority-row {
+      display:flex;align-items:center;gap:12px;
+      margin-bottom:19px;
+    }
+
+    .priority-row:last-child { margin-bottom:0; }
+
+    .priority-label {
+      width:72px;font-size:11px;color:#526078;
+    }
+
+    .bar-bg {
+      flex:1;height:7px;background:#eef1f6;
+      border-radius:20px;overflow:hidden;
+    }
+
+    .bar { height:100%;border-radius:20px;transition:width .3s; }
+
+    .bar-value { width:28px;text-align:right;font-size:11px;font-weight:700; }
+
+    .formula {
+      padding:14px;border-radius:10px;
+      background:#f4f6ff;border:1px solid #e4e8ff;
+      font-size:11px;line-height:1.8;color:#46557a;
+    }
+
+    .formula strong { color:#293b78; }
+
+    .empty {
+      padding:28px 12px;text-align:center;
+      color:var(--muted);font-size:12px;line-height:1.8;
+    }
+
+    .empty-icon { font-size:27px;margin-bottom:7px; }
+
+    .toast {
+      position:fixed;bottom:24px;right:24px;
+      z-index:3000;background:#17243a;color:white;
+      padding:14px 18px;border-radius:10px;
+      font-size:12px;max-width:340px;
+      box-shadow:0 12px 35px #17243a30;
+      display:none;
+    }
+
+    .modal {
+      display:none;position:fixed;inset:0;
+      background:#101c31a8;z-index:2000;
+      align-items:center;justify-content:center;
+      padding:18px;overflow:auto;
+    }
+
+    .modal.open { display:flex; }
+
+    .modal-card {
+      background:white;border-radius:16px;
+      width:100%;max-width:570px;
+      max-height:95vh;overflow:auto;
+      box-shadow:0 25px 80px #0002;
+    }
+
+    .modal-head {
+      display:flex;justify-content:space-between;
+      align-items:center;padding:21px 24px;
+      border-bottom:1px solid var(--line);
+    }
+
+    .modal-head h2 { font-size:18px;margin:0;font-family:Manrope,sans-serif; }
+    .close-btn { border:0;background:#f0f3f9;border-radius:8px;padding:8px 11px; }
+
+    .form-grid {
+      display:grid;grid-template-columns:1fr 1fr;
+      gap:15px;padding:23px 24px;
+    }
+
+    .field { display:flex;flex-direction:column;gap:7px;min-width:0; }
+    .field.full { grid-column:1/-1; }
+
+    .field label { font-size:11px;font-weight:700;color:#44516a; }
+
+    .field input,.field select,.field textarea {
+      width:100%;min-width:0;border:1px solid #dfe5ef;
+      border-radius:8px;padding:11px 12px;
+      background:white;font-size:12px;outline:none;
+    }
+
+    .field input:focus,.field select:focus,.field textarea:focus {
+      border-color:var(--blue);box-shadow:0 0 0 3px #4f6bed16;
+    }
+
+    .field textarea { resize:vertical;min-height:80px; }
+
+    .form-footer {
+      grid-column:1/-1;display:flex;
+      justify-content:flex-end;gap:10px;
+      border-top:1px solid var(--line);padding-top:17px;
+    }
+
+    .map-pick-hint { font-size:11px;color:var(--muted);line-height:1.6; }
+
+    footer {
+      padding:10px 0 0;text-align:center;
+      font-size:10px;color:#98a2b4;
+    }
+
+    @media(max-width:1150px) {
+      .sidebar { width:205px; }
+      main { margin-left:205px; }
+      .content { padding:24px 20px; }
+      .topbar { padding:16px 20px; }
+      .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .layout { grid-template-columns:1fr; }
+    }
+
+    @media(max-width:650px) {
+      .sidebar {
+        position:static;width:100%;height:auto;
+        padding:12px 14px;display:block;
+      }
+      .brand { padding:0 5px 12px; }
+      .sidebar .nav-label,.sidebar-bottom { display:none; }
+      .sidebar nav { display:flex;gap:5px;overflow:auto; }
+      .nav-item { flex:0 0 auto;padding:9px;font-size:11px; }
+      main { margin-left:0; }
+      .topbar { min-height:58px;padding:12px 15px; }
+      .content { padding:20px 13px; }
+      .welcome { flex-direction:column; }
+      h1 { font-size:23px; }
+      .stats { gap:9px; }
+      .stat { padding:13px; }
+      .stat-number { font-size:24px; }
+      .stat-top { font-size:10px; }
+      .stat-icon { width:29px;height:29px; }
+      .panel-head { padding:15px; }
+      .panel-body { padding:14px; }
+      #map { height:310px; }
+      .form-grid { grid-template-columns:1fr;padding:18px; }
+      .field.full,.form-footer { grid-column:1; }
+      .modal-head { padding:17px 18px; }
+      .filters { padding:12px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">⌁</div>
+      <span>EchoCity</span>
+    </div>
+
+    <div class="nav-label">WORKSPACE</div>
+    <nav>
+      <a class="nav-item active" href="#overview"><span class="nav-icon">▦</span> Overview</a>
+      <a class="nav-item" href="#city-map"><span class="nav-icon">⌖</span> City map</a>
+      <a class="nav-item" href="#issues"><span class="nav-icon">☷</span> Issue reports</a>
+      <a class="nav-item" href="#priorities"><span class="nav-icon">◉</span> Priority insights</a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div><span class="online-dot"></span>Platform status</div>
+      <strong style="color:white">All systems operational</strong>
+      <div>EchoCity · Version 1.0</div>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div class="crumb">Workspace &nbsp;›&nbsp; <strong>City intelligence</strong></div>
+      <div class="top-actions">
+        <span class="pill pill-low"><span class="online-dot"></span> API connected</span>
+        <div class="avatar">EC</div>
+      </div>
+    </header>
+
+    <div class="content" id="overview">
+      <section class="welcome">
+        <div>
+          <h1>City Intelligence Dashboard</h1>
+          <p class="subtitle">A clearer view of community issues, urgency and city-wide action.</p>
+        </div>
+        <button class="btn btn-primary" id="openReport">＋ Report an issue</button>
+      </section>
+
+      <section class="stats">
+        <article class="stat">
+          <div class="stat-top"><span>Total reports</span><span class="stat-icon" style="background:#edf0ff;color:#4f6bed">▤</span></div>
+          <div class="stat-number" id="totalCount">0</div>
+          <div class="stat-note">All recorded community issues</div>
+        </article>
+        <article class="stat">
+          <div class="stat-top"><span>Need attention</span><span class="stat-icon" style="background:#fff0df;color:#d18b28">⚑</span></div>
+          <div class="stat-number" id="attentionCount">0</div>
+          <div class="stat-note">Open or in-progress reports</div>
+        </article>
+        <article class="stat">
+          <div class="stat-top"><span>Critical issues</span><span class="stat-icon" style="background:#ffe8eb;color:#dc5966">!</span></div>
+          <div class="stat-number" id="criticalCount">0</div>
+          <div class="stat-note">Priority score of 75 or above</div>
+        </article>
+        <article class="stat">
+          <div class="stat-top"><span>Resolved</span><span class="stat-icon" style="background:#e4f8ef;color:#159b78">✓</span></div>
+          <div class="stat-number" id="resolvedCount">0</div>
+          <div class="stat-note" id="resolvedRate">0% resolution rate</div>
+        </article>
+      </section>
+
+      <div class="layout">
+        <section>
+          <article class="panel" id="city-map">
+            <div class="panel-head">
+              <div>
+                <h2>Live issue map</h2>
+                <p>Explore reports by their geographic coordinates.</p>
+              </div>
+              <span class="pill pill-status" id="mapCount">0 markers</span>
+            </div>
+            <div id="map"></div>
+            <div class="map-footer">
+              <span><i class="legend-dot" style="background:#e45c68"></i>Critical</span>
+              <span><i class="legend-dot" style="background:#e9a23b"></i>High</span>
+              <span><i class="legend-dot" style="background:#4f6bed"></i>Medium</span>
+              <span><i class="legend-dot" style="background:#159b78"></i>Low</span>
+              <span>Click a marker for details</span>
+            </div>
+          </article>
+
+          <article class="panel" id="issues">
+            <div class="panel-head">
+              <div>
+                <h2>Community issue reports</h2>
+                <p>Review, filter and update reported problems.</p>
+              </div>
+              <button class="btn btn-light" id="refreshButton">↻ Refresh</button>
+            </div>
+            <div class="filters">
+              <input type="search" id="searchInput" placeholder="Search reports...">
+              <select id="categoryFilter">
+                <option value="">All categories</option>
+                <option>Pothole</option><option>Water Leak</option>
+                <option>Streetlight</option><option>Garbage</option>
+                <option>Drainage</option><option>Other</option>
+              </select>
+              <select id="statusFilter">
+                <option value="">All statuses</option>
+                <option>Open</option><option>In Progress</option><option>Resolved</option>
+              </select>
+            </div>
+            <div class="issue-list" id="issueList">
+              <div class="empty"><div class="empty-icon">⌁</div>Loading community reports...</div>
+            </div>
+          </article>
+        </section>
+
+        <section>
+          <article class="panel" id="priorities">
+            <div class="panel-head">
+              <div>
+                <h2>Priority distribution</h2>
+                <p>How urgent are the current reports?</p>
+              </div>
+            </div>
+            <div class="panel-body" id="priorityChart"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Explainable scoring</h2>
+                <p>Every priority score has a reason.</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="formula">
+                <strong>Priority = Severity + Impact + Waiting</strong><br>
+                Severity: 1–5 × 10 points<br>
+                Community impact: up to 30 points<br>
+                Waiting time: up to 20 points<br>
+                <strong>Maximum score: 100</strong>
+              </div>
+              <p class="subtitle" style="margin:13px 0 0;font-size:11px">
+                Scores help organize reports. They support human decision-making and do not replace on-site assessment.
+              </p>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Get started</h2>
+                <p>Try the dashboard with example reports.</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <p class="subtitle" style="font-size:12px">
+                Add sample potholes, water leaks and streetlight issues to explore the map, priority scores and status updates.
+              </p>
+              <button class="btn btn-light" id="demoButton" style="width:100%">＋ Load demo reports</button>
+              <p class="subtitle" id="demoNote" style="font-size:10px;margin:10px 0 0">
+                Demo reports are stored in your local SQLite database.
+              </p>
+            </div>
+          </article>
+        </section>
+      </div>
+
+      <footer>EchoCity · Smart city issue intelligence · Built with Node.js, SQLite and OpenStreetMap</footer>
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="modalTitle">Report a city issue</h2>
+      <button class="close-btn" id="closeModal" aria-label="Close">✕</button>
+    </div>
+
+    <form id="reportForm" class="form-grid">
+      <div class="field full">
+        <label for="title">Issue title *</label>
+        <input id="title" name="title" maxlength="100" required placeholder="e.g. Large pothole near main road">
+      </div>
+
+      <div class="field">
+        <label for="category">Category *</label>
+        <select id="category" name="category" required>
+          <option value="Pothole">Pothole</option>
+          <option value="Water Leak">Water Leak</option>
+          <option value="Streetlight">Streetlight</option>
+          <option value="Garbage">Garbage</option>
+          <option value="Drainage">Drainage</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="severity">Severity *</label>
+        <select id="severity" name="severity" required>
+          <option value="1">1 — Minor</option>
+          <option value="2">2 — Low</option>
+          <option value="3" selected>3 — Moderate</option>
+          <option value="4">4 — Serious</option>
+          <option value="5">5 — Very serious</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="affectedPeople">People affected *</label>
+        <input id="affectedPeople" type="number" min="0" max="10000000" step="1" value="50" required>
+      </div>
+
+      <div class="field">
+        <label for="waitingHours">Waiting time (hours)</label>
+        <input id="waitingHours" type="number" min="0" max="100000" step="1" value="0" required>
+      </div>
+
+      <div class="field full">
+        <label for="description">Description *</label>
+        <textarea id="description" maxlength="2000" required placeholder="Describe the issue and its impact..."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="latitude">Latitude *</label>
+        <input id="latitude" type="number" min="-90" max="90" step="any" value="16.5062" required>
+      </div>
+
+      <div class="field">
+        <label for="longitude">Longitude *</label>
+        <input id="longitude" type="number" min="-180" max="180" step="any" value="80.6480" required>
+      </div>
+
+      <div class="field full">
+        <div class="map-pick-hint">Demo map starts around Vijayawada. You can enter other coordinates, or click a location on the map after closing this form to inspect its coordinates.</div>
+      </div>
+
+      <div class="form-footer">
+        <button type="button" class="btn btn-light" id="cancelReport">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="submitReport">Submit report →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const API = "/api";
+  let issues = [];
+  let markers = [];
+  let map;
+  let toastTimer;
+
+  function notify(message) {
+    const box = $("toast");
+    box.textContent = message;
+    box.style.display = "block";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => box.style.display = "none", 3500);
+  }
+
+  async function request(url, options = {}) {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    });
+
+    let data;
+    try { data = await response.json(); }
+    catch { throw new Error("Server returned an invalid response."); }
+
+    if (!response.ok || data.success === false) {
+      throw new Error(data.message || "Request failed.");
+    }
+    return data;
+  }
+
+  function safe(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    })[char]);
+  }
+
+  function levelClass(level) {
+    return ({
+      Critical:"pill-critical",
+      High:"pill-high",
+      Medium:"pill-medium",
+      Low:"pill-low"
+    })[level] || "pill-status";
+  }
+
+  function priorityColor(level) {
+    return ({
+      Critical:"#e45c68",
+      High:"#e9a23b",
+      Medium:"#4f6bed",
+      Low:"#159b78"
+    })[level] || "#758198";
+  }
+
+  function formatDate(value) {
+    if (!value) return "Date unavailable";
+    const date = new Date(value.includes("T") ? value : value.replace(" ", "T") + "Z");
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  }
+
+  function initMap() {
+    if (!window.L) {
+      $("map").innerHTML = '<div class="empty">The map library could not load. Check your internet connection and refresh.</div>';
+      return;
+    }
+
+    map = L.map("map").setView([16.5062, 80.6480], 12);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom:19,
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+    }).addTo(map);
+
+    map.on("click", event => {
+      $("latitude").value = event.latlng.lat.toFixed(6);
+      $("longitude").value = event.latlng.lng.toFixed(6);
+      notify("Coordinates filled from the map. Open the report form to use them.");
+    });
+  }
+
+  function updateMap() {
+    if (!map) return;
+
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
+
+    issues.forEach(issue => {
+      const lat = Number(issue.latitude);
+      const lng = Number(issue.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+      const color = priorityColor(issue.priority?.level);
+      const marker = L.circleMarker([lat,lng], {
+        radius:9,
+        color:"#ffffff",
+        weight:2,
+        fillColor:color,
+        fillOpacity:.95
+      }).addTo(map);
+
+      marker.bindPopup(`
+        <div style="min-width:180px;font-family:Arial,sans-serif">
+          <strong>${safe(issue.title)}</strong>
+          <p style="margin:8px 0;font-size:12px">${safe(issue.category)} · ${safe(issue.status)}</p>
+          <p style="margin:5px 0;font-size:12px">Priority: <b>${safe(issue.priority?.score ?? 0)}/100</b></p>
+          <p style="margin:5px 0;font-size:12px">${safe(issue.priority?.level || "Unrated")}</p>
+          <button onclick="window.echoCityFocus(${Number(issue.id)})" style="margin-top:6px;padding:7px 9px;cursor:pointer">View report</button>
+        </div>
+      `);
+
+      markers.push(marker);
+    });
+
+    $("mapCount").textContent = markers.length + " markers";
+  }
+
+  window.echoCityFocus = id => {
+    const issue = issues.find(item => Number(item.id) === Number(id));
+    if (!issue) return;
+    $("searchInput").value = issue.title;
+    renderIssues();
+    $("issues").scrollIntoView({ behavior:"smooth",block:"start" });
+  };
+
+  function updateStats() {
+    const total = issues.length;
+    const resolved = issues.filter(issue => issue.status === "Resolved").length;
+    const attention = total - resolved;
+    const critical = issues.filter(issue =>
+      issue.priority?.level === "Critical" && issue.status !== "Resolved"
+    ).length;
+    const rate = total ? Math.round(resolved / total * 100) : 0;
+
+    $("totalCount").textContent = total;
+    $("attentionCount").textContent = attention;
+    $("criticalCount").textContent = critical;
+    $("resolvedCount").textContent = resolved;
+    $("resolvedRate").textContent = rate + "% resolution rate";
+  }
+
+  function updatePriorityChart() {
+    const levels = ["Critical","High","Medium","Low"];
+    const counts = Object.fromEntries(levels.map(level => [
+      level,issues.filter(issue => issue.priority?.level === level).length
+    ]));
+    const max = Math.max(1,...Object.values(counts));
+
+    $("priorityChart").innerHTML = levels.map(level => `
+      <div class="priority-row">
+        <div class="priority-label"><span class="legend-dot" style="background:${priorityColor(level)}"></span>${level}</div>
+        <div class="bar-bg"><div class="bar" style="width:${counts[level]/max*100}%;background:${priorityColor(level)}"></div></div>
+        <div class="bar-value">${counts[level]}</div>
+      </div>
+    `).join("");
+  }
+
+  function renderIssues() {
+    const search = $("searchInput").value.trim().toLowerCase();
+    const category = $("categoryFilter").value;
+    const status = $("statusFilter").value;
+
+    const filtered = issues.filter(issue => {
+      const text = [issue.title,issue.description,issue.category].join(" ").toLowerCase();
+      return text.includes(search)
+        && (!category || issue.category === category)
+        && (!status || issue.status === status);
+    }).sort((a,b) => (b.priority?.score || 0) - (a.priority?.score || 0));
+
+    if (!filtered.length) {
+      $("issueList").innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">⌁</div>
+          <strong>${issues.length ? "No matching reports" : "No reports yet"}</strong><br>
+          ${issues.length ? "Try changing your filters." : "Report an issue or load demo reports to get started."}
+        </div>`;
+      return;
+    }
+
+    $("issueList").innerHTML = filtered.map(issue => {
+      const score = issue.priority?.score ?? 0;
+      const explanation = (issue.priority?.explanation || []).join("\n");
+      const nextStatus = issue.status === "Open" ? "In Progress"
+        : issue.status === "In Progress" ? "Resolved" : "Open";
+
+      return `
+        <article class="issue">
+          <div class="issue-top">
+            <div style="min-width:0">
+              <div class="issue-title">${safe(issue.title)}</div>
+              <div class="issue-meta">
+                ${safe(issue.category)} · Report #${safe(issue.id)}<br>
+                ${safe(formatDate(issue.createdAt))}
+              </div>
+            </div>
+            <span class="pill ${levelClass(issue.priority?.level)}">${safe(issue.priority?.level || "Low")}</span>
+          </div>
+          <div class="issue-meta">${safe(issue.description)}</div>
+          <div class="issue-bottom">
+            <div class="score">${score}/100 <span>priority</span></div>
+            <div class="small-actions">
+              <button class="small-btn" data-explain="${Number(issue.id)}">Why?</button>
+              <button class="small-btn" data-status="${Number(issue.id)}" data-next="${safe(nextStatus)}">${safe(nextStatus)}</button>
+              <button class="small-btn" data-delete="${Number(issue.id)}" aria-label="Delete report">Delete</button>
+            </div>
+          </div>
+          <div class="formula" id="explain-${Number(issue.id)}" hidden style="margin-top:12px;white-space:pre-line">${safe(explanation)}</div>
+        </article>`;
+    }).join("");
+  }
+
+  async function loadIssues(showMessage = false) {
+    try {
+      const data = await request(API + "/issues");
+      issues = data.issues || [];
+      updateStats();
+      updatePriorityChart();
+      updateMap();
+      renderIssues();
+      if (showMessage) notify("Reports refreshed successfully.");
+    } catch (error) {
+      $("issueList").innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">!</div>
+          <strong>Could not load reports</strong><br>
+          ${safe(error.message)}<br><br>
+          <button class="btn btn-light" onclick="window.echoCityRefresh()">Try again</button>
+        </div>`;
+      notify("API error: " + error.message);
+    }
+  }
+
+  window.echoCityRefresh = () => loadIssues(true);
+
+  function openModal() {
+    $("reportModal").classList.add("open");
+    setTimeout(() => $("title").focus(), 100);
+  }
+
+  function closeModal() {
+    $("reportModal").classList.remove("open");
+  }
+
+  $("openReport").addEventListener("click", openModal);
+  $("closeModal").addEventListener("click", closeModal);
+  $("cancelReport").addEventListener("click", closeModal);
+  $("refreshButton").addEventListener("click", () => loadIssues(true));
+
+  $("reportModal").addEventListener("click", event => {
+    if (event.target === $("reportModal")) closeModal();
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeModal();
+  });
+
+  $("reportForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const button = $("submitReport");
+    button.disabled = true;
+    button.textContent = "Submitting...";
+
+    const payload = {
+      title:$("title").value.trim(),
+      category:$("category").value,
+      description:$("description").value.trim(),
+      latitude:Number($("latitude").value),
+      longitude:Number($("longitude").value),
+      severity:Number($("severity").value),
+      affectedPeople:Number($("affectedPeople").value)
+    };
+
+    try {
+      const data = await request(API + "/issues", {
+        method:"POST",
+        body:JSON.stringify(payload)
+      });
+
+      closeModal();
+      $("reportForm").reset();
+      $("severity").value = "3";
+      $("affectedPeople").value = "50";
+      $("waitingHours").value = "0";
+      $("latitude").value = "16.5062";
+      $("longitude").value = "80.6480";
+
+      await loadIssues();
+      notify("Issue reported successfully! Priority: " + data.issue.priority.score + "/100");
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Submit report →";
+    }
+  });
+
+  $("issueList").addEventListener("click", async event => {
+    const explainButton = event.target.closest("[data-explain]");
+    if (explainButton) {
+      const box = $("explain-" + explainButton.dataset.explain);
+      if (box) box.hidden = !box.hidden;
+      return;
+    }
+
+    const statusButton = event.target.closest("[data-status]");
+    if (statusButton) {
+      const id = statusButton.dataset.status;
+      const status = statusButton.dataset.next;
+      statusButton.disabled = true;
+      try {
+        await request(API + "/issues/" + id + "/status", {
+          method:"PATCH",
+          body:JSON.stringify({status})
+        });
+        await loadIssues();
+        notify("Report status updated to " + status + ".");
+      } catch (error) {
+        notify(error.message);
+        statusButton.disabled = false;
+      }
+      return;
+    }
+
+    const deleteButton = event.target.closest("[data-delete]");
+    if (deleteButton) {
+      const id = deleteButton.dataset.delete;
+      if (!confirm("Delete report #" + id + "? This cannot be undone.")) return;
+
+      try {
+        await request(API + "/issues/" + id, {method:"DELETE"});
+        await loadIssues();
+        notify("Report deleted.");
+      } catch (error) {
+        notify(error.message);
+      }
+    }
+  });
+
+  ["searchInput","categoryFilter","statusFilter"].forEach(id => {
+    $(id).addEventListener(id === "searchInput" ? "input" : "change", renderIssues);
+  });
+
+  $("demoButton").addEventListener("click", async () => {
+    const button = $("demoButton");
+    button.disabled = true;
+    button.textContent = "Adding demo reports...";
+
+    const samples = [
+      {
+        title:"Large pothole near main road",
+        category:"Pothole",
+        description:"A large road pothole may affect two-wheelers and other road users.",
+        latitude:16.5062,longitude:80.6480,severity:5,affectedPeople:450
+      },
+      {
+        title:"Water leaking from street pipe",
+        category:"Water Leak",
+        description:"A continuous water leak has been reported near a residential lane.",
+        latitude:16.5150,longitude:80.6350,severity:4,affectedPeople:180
+      },
+      {
+        title:"Streetlight not working",
+        category:"Streetlight",
+        description:"A streetlight is not operating after dark.",
+        latitude:16.4950,longitude:80.6570,severity:3,affectedPeople:90
+      },
+      {
+        title:"Garbage overflow near bus stop",
+        category:"Garbage",
+        description:"A public bin is overflowing and needs collection.",
+        latitude:16.5220,longitude:80.6420,severity:2,affectedPeople:60
+      }
+    ];
+
+    try {
+      for (const sample of samples) {
+        await request(API + "/issues", {
+          method:"POST",
+          body:JSON.stringify(sample)
+        });
+      }
+      await loadIssues();
+      notify("Four demo reports added to SQLite!");
+      $("demoNote").textContent = "Demo reports added. You can update or delete them.";
+    } catch (error) {
+      notify("Demo loading stopped: " + error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "＋ Load demo reports";
+    }
+  });
+
+  initMap();
+  loadIssues();
+})();
+
+// EchoCity Live Analytics — safely integrated into the existing page
+(async function () {
+  const panel = document.createElement("section");
+  panel.id = "echocity-live-analytics";
+  panel.style.cssText = "margin:20px 0;padding:22px;border-radius:18px;background:#fff;border:1px solid #e2e8f0;color:#17243b";
+
+  panel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+      <div>
+        <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;color:#4f6df5">CITY INTELLIGENCE</div>
+        <h2 style="margin:7px 0 4px;font-size:22px">Live City Analytics</h2>
+        <p style="margin:0;color:#718096;font-size:13px">Live data from your EchoCity database</p>
+      </div>
+      <button id="echoAnalyticsRefresh" type="button" style="border:0;border-radius:10px;padding:11px 15px;background:#eef2ff;color:#3347b5;font-weight:700;cursor:pointer">Refresh analytics</button>
+    </div>
+    <div id="echoAnalyticsCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px">Loading analytics...</div>
+    <div id="echoAnalyticsBreakdown" style="margin-top:18px;color:#52617a;font-size:13px"></div>
+  `;
+
+  const content = document.querySelector(".content");
+  if (content) content.prepend(panel);
+
+  async function refreshAnalytics() {
+    const cards = document.getElementById("echoAnalyticsCards");
+    const breakdown = document.getElementById("echoAnalyticsBreakdown");
+
+    try {
+      const response = await fetch("/api/analytics");
+      if (!response.ok) throw new Error("Analytics request failed");
+      const result = await response.json();
+      const a = result.analytics;
+
+      const items = [
+        ["Total reports", a.totalReports, "#eef2ff", "#4059d8"],
+        ["People affected", Number(a.affectedPeople).toLocaleString(), "#ecfdf5", "#087f5b"],
+        ["Average priority", a.averagePriority + "/100", "#fff7ed", "#c56b12"],
+        ["Resolution rate", a.resolutionRate + "%", "#fdf2f8", "#b83280"]
+      ];
+
+      cards.innerHTML = items.map(([label, value, bg, color]) => `
+        <div style="padding:17px;border-radius:13px;background:${bg}">
+          <div style="font-size:12px;color:#64748b">${label}</div>
+          <div style="font-size:27px;font-weight:800;color:${color};margin-top:8px">${value}</div>
+        </div>
+      `).join("");
+
+      breakdown.innerHTML =
+        "<strong>Priority breakdown</strong><div style='display:flex;gap:9px;flex-wrap:wrap;margin-top:10px'>" +
+        Object.entries(a.byPriority || {}).map(([name, count]) =>
+          `<span style="padding:8px 11px;border-radius:9px;background:#f1f5f9">${name}: <strong>${count}</strong></span>`
+        ).join("") +
+        "</div><p style='margin-top:12px'>Reports by status: " +
+        Object.entries(a.byStatus || {}).map(([name, count]) => `${name}: ${count}`).join(" · ") +
+        "</p>";
+    } catch (error) {
+      cards.textContent = "Analytics could not load. Check the server and refresh.";
+      breakdown.textContent = "";
+    }
+  }
+
+  document.getElementById("echoAnalyticsRefresh").addEventListener("click", refreshAnalytics);
+  await refreshAnalytics();
+
+  // Check for possible duplicates before the original form handler submits.
+  const form = document.getElementById("reportForm");
+  if (form) {
+    let allowReportSubmit = false;
+
+    form.addEventListener("submit", async function (event) {
+      if (allowReportSubmit) {
+        allowReportSubmit = false;
+        return;
+      }
+
+      event.preventDefault();
+
+      const title = document.getElementById("title").value.trim().toLowerCase();
+      const category = document.getElementById("category").value;
+      const lat = Number(document.getElementById("latitude").value);
+      const lon = Number(document.getElementById("longitude").value);
+
+      try {
+        const response = await fetch("/api/issues");
+        if (!response.ok) throw new Error("Could not check existing reports");
+        const result = await response.json();
+
+        const rad = n => n * Math.PI / 180;
+        const distance = issue => {
+          const dLat = rad(issue.latitude - lat);
+          const dLon = rad(issue.longitude - lon);
+          const h = Math.sin(dLat / 2) ** 2 +
+            Math.cos(rad(lat)) * Math.cos(rad(issue.latitude)) *
+            Math.sin(dLon / 2) ** 2;
+          return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+        };
+
+        const similar = (result.issues || []).filter(issue =>
+          issue.status !== "Resolved" &&
+          issue.category === category &&
+          (distance(issue) <= 150 ||
+            (issue.title.trim().toLowerCase() === title && distance(issue) <= 2000))
+        );
+
+        if (similar.length) {
+          const message = "Possible similar reports found:\n\n" +
+            similar.slice(0, 4).map(issue =>
+              "• " + issue.title + " (" + Math.round(distance(issue)) + " metres away)"
+            ).join("\n") +
+            "\n\nDo you still want to submit your report?";
+
+          if (!window.confirm(message)) return;
+        }
+
+        allowReportSubmit = true;
+        form.requestSubmit();
+      } catch (error) {
+        window.alert("Duplicate check could not complete. Your report will continue normally.");
+        allowReportSubmit = true;
+        form.requestSubmit();
+      }
+    }, true);
+  }
+})();</script>
+</body>
+</html>
+
